@@ -14,16 +14,29 @@ final class GildedRose
     ) {
     }
 
-    public function updateBrie($item)
+    private function adjustQuality(Item $item, int $amount): void
     {
-        $factor = $item->sellIn <= 0 ? 2 : 1;
-        $item->quality += $factor;
-        $item->quality = $item->quality > 50 ? 50 : $item->quality;
+        $item->quality += $amount;
+        if ($item->quality > 50) {
+            $item->quality = 50;
+        } elseif ($item->quality < 0) {
+            $item->quality = 0;
+        }
+    }
 
+    private function decrementSellIn(Item $item): void
+    {
         $item->sellIn--;
     }
 
-    public function updateBackstagePass($item)
+    private function updateBrie(Item $item): void
+    {
+        $factor = $item->sellIn <= 0 ? 2 : 1;
+        $this->adjustQuality($item, $factor);
+        $this->decrementSellIn($item);
+    }
+
+    private function updateBackstagePass(Item $item): void
     {
         if ($item->sellIn <= 0) {
             $item->quality = 0;
@@ -35,53 +48,53 @@ final class GildedRose
             if ($item->sellIn <= 5) {
                 $factor = 3;
             }
-
-            $item->quality += $factor;
-            $item->quality = $item->quality > 50 ? 50 : $item->quality;
+            $this->adjustQuality($item, $factor);
         }
-        $item->sellIn--;
+        $this->decrementSellIn($item);
     }
 
-    public function updateSulfuras($item)
+    private function updateSulfuras(Item $item): void
     {
+        // Sulfuras doesn't need updating
     }
 
-    public function updateConjured($item)
+    private function updateConjured(Item $item): void
     {
-        $item->quality -= 2;
-        $item->quality = $item->quality < 0 ? 0 : $item->quality;
-        $item->sellIn--;
+        $this->adjustQuality($item, -2);
+        $this->decrementSellIn($item);
     }
 
-    public function updateGeneralItems($item)
+    private function updateGeneralItems(Item $item): void
     {
-        if ($item->quality > 0) {
-            $factor = $item->sellIn <= 0 ? 2 : 1;
-            $item->quality -= $factor;
-            $item->quality = $item->quality < 0 ? 0 : $item->quality;
-        }
-        $item->sellIn--;
+        $factor = $item->sellIn <= 0 ? 2 : 1;
+        $this->adjustQuality($item, -$factor);
+        $this->decrementSellIn($item);
     }
 
     public function updateQuality(): void
     {
         foreach ($this->items as $item) {
-            switch ($item->name) {
-                case 'Aged Brie':
-                    $this->updateBrie($item);
-                    break;
-                case 'Backstage passes to a TAFKAL80ETC concert':
-                    $this->updateBackstagePass($item);
-                    break;
-                case 'Sulfuras, Hand of Ragnaros':
-                    $this->updateSulfuras($item);
-                    break;
-                case 'Conjured Mana Cake':
-                    $this->updateConjured($item);
-                    break;
-                default:
-                    $this->updateGeneralItems($item);
-            }
+            $this->updateItem($item);
+        }
+    }
+
+    private function updateItem(Item $item): void
+    {
+        switch ($item->name) {
+            case 'Aged Brie':
+                $this->updateBrie($item);
+                break;
+            case 'Backstage passes to a TAFKAL80ETC concert':
+                $this->updateBackstagePass($item);
+                break;
+            case 'Sulfuras, Hand of Ragnaros':
+                $this->updateSulfuras($item);
+                break;
+            case 'Conjured Mana Cake':
+                $this->updateConjured($item);
+                break;
+            default:
+                $this->updateGeneralItems($item);
         }
     }
 }
